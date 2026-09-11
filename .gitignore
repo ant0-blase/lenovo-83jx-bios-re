@@ -1,0 +1,20 @@
+# Local build output
+*.o
+*.so
+*.efi
+tools/lnl-undervolt/lnl-undervolt
+tools/lnl-uvp-pcode/lnl-uvp-pcode
+
+# Proprietary firmware / extracted images
+*.rom
+*.bin
+*.fd
+*.cap
+*.dump/
+
+# Local analysis output
+*.log
+*.trace
+*.json
+__pycache__/
+.DS_Store
