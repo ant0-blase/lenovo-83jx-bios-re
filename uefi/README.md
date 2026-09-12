@@ -1,71 +1,64 @@
-# UEFI Shell scripts
+# UEFI Shell profile
 
-These scripts target only the tested Lenovo Yoga Slim 7 14ILL10 / 83JX `KLS71` `CpuSetup` layout. Revalidate the IFR/varstore offsets after a BIOS update before reusing them.
+These files target only the tested **Lenovo Yoga Slim 7 14ILL10 / 83JX** with the exact `KLS71` firmware layout used by this reverse. Revalidate the IFR and varstores after any BIOS update before reusing the offsets.
 
-## Active performance scripts
+## `Yoga14ILL10-PERFORMANCE-MAX.nsh`
 
-`Yoga14ILL10-Performance.nsh` applies the clean CPU baseline while keeping normal CPU power management intact:
+This is the single active UEFI tuning profile in the repository. Its goal is **maximum practical CPU + Arc iGPU performance while retaining the dynamic mechanisms that improve idle power, battery life and temperature when the machine is not fully loaded**.
 
-```text
-C-states                 enabled
-C1E                      enabled
-Turbo                    enabled
-Energy Efficient P-state enabled
-Base Power Boot Mode     Nominal
-Timed MWAIT              disabled
-IO MWAIT Redirection     disabled
-Package C-State Limit    Auto
-PSYS PMax                Auto
-Acoustic mitigation      disabled
-Core/GT/ATOM slow slew   fastest exposed value
-cTDP/Assured Power init  normal
-```
-
-`Yoga14ILL10-Battery37W-BCLK.nsh` applies the current maximum-performance battery/BCLK profile:
+The profile combines:
 
 ```text
-BCLK Spread              off
-ThETA Ibatt              off
-VrAlert Demotion         off
-Package PL1              37 W
-Platform PL1             37 W
-Platform PL2             37 W
-PACKAGE_POWER_LIMIT lock off
-PSYS PMax                Auto
-Base Power mode          Nominal
-cTDP init                normal
-PL4 Boost                63 W (IFR maximum; aggressive experiment)
+CPU / HWP
+  Turbo / EIST / Speed Shift       enabled
+  HWP autonomous per-core policy   enabled
+  HWP lock                         disabled
+  Race To Halt                     enabled
+  C-states / C1E                   enabled
+  Package C-state                  Auto
+  Energy Efficient P-state/Turbo   enabled
+
+Power / clocks
+  Package PL1                      37 W
+  Platform PL1 / PL2               37 W / 37 W
+  Reactive PL4 Boost               63 W
+  BCLK Spread                      disabled
+  PROCHOT / VrAlert demotion       disabled
+
+VR tune
+  P-core AC load-line              2.50 mOhm experimental
+  GT AC load-line                  2.50 mOhm experimental
+
+Memory / iGPU efficiency
+  LPDDR5X maximum ceiling          8533 MT/s
+  SAGV                              enabled, four points
+  Memory power-down                Auto
+  RC6 / MC6                        enabled
+  Memory Bandwidth Compression     enabled
 ```
 
-After **Load Setup Defaults**:
+The script intentionally does **not** disable Thermal Monitor, TCC, VR thermal alert, ICCMAX, TDC, Fast Vmode, hard current protection or EC/BMS protections. It also leaves `DptfConfig` / Intel IPF firmware variables untouched.
+
+## `BDPROCHOT.efi`
+
+`BDPROCHOT.efi` performs a read-modify-write of package `MSR_POWER_CTL (0x1FC)` and clears only bit 0 (`ENABLE_BIDIR_PROCHOT`). It preserves every other bit in the MSR.
+
+The source is kept in `BDPROCHOT.c` beside the binary.
+
+This helper does **not** disable the CPU's internal Thermal Monitor or TCC, but external PROCHOT can still be part of the OEM platform protection path. Treat it as an explicit performance-oriented modification.
+
+Because this MSR is runtime state, firmware can restore it during a reboot. Persistent setup variables and the BD PROCHOT helper therefore have different application timing.
+
+## Apply
 
 ```text
-Yoga14ILL10-Performance.nsh
-Yoga14ILL10-Battery37W-BCLK.nsh
+1. Boot a UEFI Shell with setup_var.efi available.
+2. Run Yoga14ILL10-PERFORMANCE-MAX.nsh.
+3. Fully shut down and cold boot.
+4. If external BD PROCHOT should be disabled for the Windows boot, enter the
+   UEFI Shell again and run the script once more before booting Windows.
+5. Apply windows/Yoga14ILL10-PERFORMANCE-MAX.ps1 from elevated PowerShell after
+   selecting the Ultimate Performance power plan.
 ```
 
-Then fully power the machine off and cold boot.
-
-`Yoga14ILL10-Battery37W-BCLK-rollback.nsh` restores the fields owned by the battery/BCLK profile to their reference/default state without undoing the performance baseline.
-
-## Audit
-
-`Yoga14ILL10-Audit-current.nsh` reads the active performance, battery, BCLK and power fields. It performs no writes.
-
-## Active undervolt research
-
-`Yoga14ILL10-Undervolt-OC-Lock.nsh` changes only:
-
-```text
-CpuSetup +0xFA = 0
-```
-
-That has been verified to clear the observed normal OC Lock state, but **UVP remains active** and no voltage offset is applied by this script.
-
-`Yoga14ILL10-UVP-PCODE0A-audit.nsh` is the remaining read-only early-policy audit. It reads the hidden `CpuSetup +0x2F3/+0x2F4/+0x2F5` candidates feeding the early internal policy/PCODE `0x0A` path plus the known OC/run-control fields. It does not write the unnamed bytes.
-
-The older UEFI/BDS/raw-PCODE timing experiments are no longer kept as active files because they already established that those timings are too late; their results are documented in `../docs/UNDERVOLT-REVERSE.md`.
-
-## Safety boundary
-
-The active scripts do **not** disable PROCHOT, Thermal Monitor, VR thermal alerts, ICCMAX, TDC, Fast Vmode, load-line/voltage protections or raw EC/BMS protections. The 63 W PL4-Boost value can nevertheless increase peak battery/VR stress and droop risk.
+The Windows companion deliberately uses maximum-performance settings on AC and a battery-efficient HWP/EPP/core-parking policy on DC.
