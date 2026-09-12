@@ -63,10 +63,14 @@ The repository focuses on the parts that are still useful: the recovered firmwar
 ├── uefi/
 │   ├── BDPROCHOT.c
 │   ├── BDPROCHOT.efi
+│   ├── BDPROCHOT-RESTORE.c
+│   ├── BDPROCHOT-RESTORE.efi
 │   ├── README.md
-│   └── Yoga14ILL10-PERFORMANCE-MAX.nsh
+│   ├── Yoga14ILL10-PERFORMANCE-MAX.nsh
+│   └── Yoga14ILL10-PERFORMANCE-MAX-ROLLBACK.nsh
 └── windows/
-    └── Yoga14ILL10-PERFORMANCE-MAX.ps1
+    ├── Yoga14ILL10-PERFORMANCE-MAX.ps1
+    └── Yoga14ILL10-PERFORMANCE-MAX-ROLLBACK.ps1
 ```
 
 ## PERFORMANCE MAX profile
@@ -183,9 +187,28 @@ The scripts are tied to the exact tested KLS71 firmware layout.
 4. If BD PROCHOT is desired for that boot, enter the UEFI Shell again and run the script once more before booting Windows. `BDPROCHOT.efi` changes runtime `MSR_POWER_CTL` state and firmware can restore it across a reboot.
 5. In Windows, select **Ultimate Performance**, open an elevated PowerShell, and run `windows/Yoga14ILL10-PERFORMANCE-MAX.ps1`.
 
+## Full rollback
+
+`uefi/Yoga14ILL10-PERFORMANCE-MAX-ROLLBACK.nsh` restores the KLS71 **reference/OEM values for every persistent `CpuSetup` and `SaSetup` field written by PERFORMANCE MAX**. In particular it:
+
+- removes the custom 37 W Package/Platform PL1/PL2 programming and returns those paths to firmware-default programming;
+- restores Reactive PL4 Boost to `0`;
+- restores `PROCHOT Demotion` to Hardware Default and `VrAlert Demotion` to Enabled;
+- restores BCLK Spread to Enabled;
+- restores P-core and GT AC load-lines to `0` / Auto;
+- restores maximum memory frequency to `0` / Auto while keeping the OEM SAGV/RC6/MC6/MBC defaults;
+- restores HWP Lock to its reference/default Enabled value;
+- calls `BDPROCHOT-RESTORE.efi`, which sets only `MSR_POWER_CTL (0x1FC) bit 0` and preserves every other bit.
+
+After running the UEFI rollback, perform a **full shutdown and cold boot**.
+
+Then run `windows/Yoga14ILL10-PERFORMANCE-MAX-ROLLBACK.ps1` from an elevated PowerShell. It switches Windows back to the built-in **Balanced** plan without deleting the modified Ultimate Performance plan or resetting unrelated custom power plans.
+
+This rollback is a **stock-reference rollback**, not a snapshot restore. If custom values existed before PERFORMANCE MAX, they cannot be reconstructed unless they were recorded beforehand. For the broadest OEM reset, BIOS **Load Setup Defaults** remains authoritative.
+
 ## BD PROCHOT helper
 
-`BDPROCHOT.efi` clears only `MSR_POWER_CTL (0x1FC) bit 0`, the package-level bidirectional/external PROCHOT input bit. It preserves the remaining MSR bits.
+`BDPROCHOT.efi` clears only `MSR_POWER_CTL (0x1FC) bit 0`, the package-level bidirectional/external PROCHOT input bit. It preserves the remaining MSR bits. `BDPROCHOT-RESTORE.efi` performs the inverse RMW and sets only bit 0.
 
 Internal CPU Thermal Monitor and TCC are not disabled by this helper. However, external PROCHOT can be part of the OEM platform-protection path, so this remains a deliberate performance-oriented modification rather than a stock-safety setting.
 

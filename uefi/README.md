@@ -49,6 +49,28 @@ This helper does **not** disable the CPU's internal Thermal Monitor or TCC, but 
 
 Because this MSR is runtime state, firmware can restore it during a reboot. Persistent setup variables and the BD PROCHOT helper therefore have different application timing.
 
+`BDPROCHOT-RESTORE.efi` is the inverse helper used by the rollback script. It sets only `MSR_POWER_CTL bit 0` with a read-modify-write and leaves every other MSR bit unchanged.
+
+## Full rollback
+
+`Yoga14ILL10-PERFORMANCE-MAX-ROLLBACK.nsh` restores the reference/OEM values for every `CpuSetup` and `SaSetup` field written by the active profile. The main non-default performance changes are returned as follows:
+
+```text
+Package / Platform PL1/PL2      firmware-default programming
+Reactive PL4 Boost              0
+PROCHOT Demotion                Hardware Default
+VrAlert Demotion                Enabled
+BCLK Spread                     Enabled
+P-core / GT AC Loadline         Auto / Auto
+Maximum memory frequency        Auto
+HWP Lock                        Enabled/default
+BD PROCHOT external input       restored by BDPROCHOT-RESTORE.efi
+```
+
+Run the rollback from UEFI Shell, then fully shut down and cold boot. The script is a stock-reference rollback, not a snapshot of any custom pre-existing setup. BIOS **Load Setup Defaults** remains the authoritative full OEM reset.
+
+The Windows companion rollback is `../windows/Yoga14ILL10-PERFORMANCE-MAX-ROLLBACK.ps1`; it switches back to the built-in Balanced plan without deleting custom plans.
+
 ## Apply
 
 ```text
