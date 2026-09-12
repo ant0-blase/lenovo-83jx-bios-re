@@ -6,6 +6,12 @@ The repository focuses on the parts that are still useful: the recovered firmwar
 
 > Machine-specific research only. No proprietary Lenovo firmware image is redistributed.
 
+## Disclaimer
+
+**Use this repository entirely at your own risk.** The scripts and procedures here modify low-level UEFI/NVRAM, CPU power-management and voltage-regulator related settings. A wrong value, an incompatible BIOS revision, an interrupted operation, or unexpected firmware behavior can cause instability, boot failure, data loss, or in the worst case a **bricked device** requiring firmware recovery or external reprogramming.
+
+The risk is considered low on the exact tested Lenovo Yoga Slim 7 14ILL10 / 83JX firmware documented in this repository when the provided values are used as intended, but it is **never zero**. The author and contributors are **not responsible for any damage, data loss, loss of warranty, failed boot, or bricked hardware** resulting from the use of these files or instructions.
+
 ## Target
 
 | Item | Value |
