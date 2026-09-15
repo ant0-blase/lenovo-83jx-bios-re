@@ -214,6 +214,19 @@ echo MSR 0x150 offset undervolt is NOT written because UVP remains active.
 echo.
 
 echo ===== MEMORY / SYSTEM AGENT PERFORMANCE-WATT TUNE =====
+echo QCLK Odd Ratio = Enabled
+echo Use the tested KLS71 MRC path: Custom profile, 133 MHz RefClk, memory ratio AUTO.
+echo Manual DRAM timing fields are left untouched by this profile.
+setup_var.efi SaSetup:0x9F(1)=1
+setup_var.efi SaSetup:0x09(1)=0
+setup_var.efi SaSetup:0x0A(1)=0
+setup_var.efi SaSetup:0x0B(1)=1
+echo QCLK / MRC profile readback:
+setup_var.efi SaSetup:0x9F(1)
+setup_var.efi SaSetup:0x09(1)
+setup_var.efi SaSetup:0x0A(1)
+setup_var.efi SaSetup:0x0B(1)
+echo.
 echo Maximum Memory Frequency ceiling = 8533 MT/s
 echo SAGV remains enabled, so this is the top point/ceiling rather than a fixed idle clock.
 setup_var.efi SaSetup:0x9D(2)=8533
