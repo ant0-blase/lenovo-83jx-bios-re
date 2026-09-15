@@ -261,6 +261,10 @@ setup_var.efi SaSetup:0x1CC(1)=1
 echo Probeless Trace Support = Disabled
 setup_var.efi SaSetup:0x214(1)=0
 
+echo NPU Device = Disabled
+echo Remove the Lunar Lake NPU from the OS-visible platform.
+setup_var.efi SaSetup:0x204(1)=0
+
 echo ===== GT / iGPU PERFORMANCE-WATT TUNE =====
 echo Configure GT in BIOS = Enabled
 setup_var.efi SaSetup:0x32(1)=1
@@ -316,6 +320,7 @@ setup_var.efi SaSetup:0xC6(1)
 setup_var.efi SaSetup:0x112(1)
 setup_var.efi SaSetup:0x1CC(1)
 setup_var.efi SaSetup:0x214(1)
+setup_var.efi SaSetup:0x204(1)
 setup_var.efi SaSetup:0x32(1)
 setup_var.efi SaSetup:0x2E(1)
 setup_var.efi SaSetup:0x2F(1)
